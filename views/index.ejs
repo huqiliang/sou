@@ -179,6 +179,14 @@
         e.scale = 1
       }
       config.imgScale = config.imgScale * e.scale;
+      if (config.imgScale >= config.maxScale) {
+        config.imgScale = config.maxScale
+      }
+
+      if (config.imgScale <= config.minScale) {
+        config.imgScale = config.minScale
+      }
+
       drawImg(-e.pageX * config.imgScale, - e.pageY * config.imgScale)
 
     };
