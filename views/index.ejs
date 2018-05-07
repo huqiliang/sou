@@ -44,6 +44,7 @@
     var oldX; var oldY;
     var isClick = true;
     var first = true;
+    var isTuremove = false
     var temp;
     var interVal;
     var winWidth = window.innerWidth;
@@ -106,16 +107,6 @@
     stage.canvas.height = winHeight
 
     const drawImg = (x, y) => {
-      // let x, y;
-
-
-      // if (!!type && type == 'small') {
-      //   x = container.x + canvas.width / 2
-      //   y = container.y + canvas.width / 2
-      // } else {
-      //   x =  container.x* 2
-      //   y = container.y * 2
-      // }
       if (!x) {
         x = container.x
       }
@@ -170,30 +161,30 @@
     };
     var box = document.querySelector("#canvas");
     var boxGesture = setGesture(box);  //得到一个对象
-    // boxGesture.gesturestart = function () {  //双指开始
-    //   //alert('test')
-    // };
+    boxGesture.gesturestart = function () {  //双指开始
+      isTuremove = true;
+      //alert('test')
+    };
     boxGesture.gesturemove = function (e) {  //双指移动
       //alert(e.pageX)
-      if (e.scale > 1.0005) {
-        e.scale = 1
-      }
-      config.imgScale = config.imgScale * e.scale;
+      e.preventDefault()
+      config.imgScale = e.scale;
       if (config.imgScale >= config.maxScale) {
         config.imgScale = config.maxScale
       }
-
+      //alert(e.scale)
       if (config.imgScale <= config.minScale) {
         config.imgScale = config.minScale
       }
 
-      drawImg(-e.pageX * config.imgScale, - e.pageY * config.imgScale)
+      drawImg(container.x, container.y)
 
     };
-    // boxGesture.gestureend = function () {  //双指结束
-    //   //box.innerHTML = "";
-    //   //box.style.cssText = "background-color:red";
-    // }
+    boxGesture.gestureend = function () {  //双指结束
+      isTuremove = false
+      //box.innerHTML = "";
+      //box.style.cssText = "background-color:red";
+    }
     const drawRc = () => {
       config.areaOption.forEach((val, i) => {
         var cap = new createjs.Shape();
@@ -222,35 +213,38 @@
       oldY = e.stageY;
     });
     container.on("pressmove", function (e) {
-      isClick = false;
-      function checkRound() {
-        if ((image.image.width * config.imgScale - winWidth) < Math.abs(container.x)) {
-          container.x = -(image.image.width * config.imgScale - winWidth)
-        }
-        if ((image.image.height * config.imgScale - winHeight) < Math.abs(container.y)) {
-          container.y = -(image.image.height * config.imgScale - winHeight)
+      if (!isTuremove) {
+        isClick = false;
+
+        function checkRound() {
+          if ((image.image.width * config.imgScale - winWidth) < Math.abs(container.x)) {
+            container.x = -(image.image.width * config.imgScale - winWidth)
+          }
+          if ((image.image.height * config.imgScale - winHeight) < Math.abs(container.y)) {
+            container.y = -(image.image.height * config.imgScale - winHeight)
+          }
+
+          if (container.x >= 0) {
+            container.x = 0
+          }
+          if (container.y >= 0) {
+            container.y = 0
+          }
         }
 
-        if (container.x >= 0) {
-          container.x = 0
+        interVal = setTimeout(checkRound, 0);
+
+        container.x += e.stageX - oldX;
+        container.y += e.stageY - oldY;
+
+        config.center = {
+          x: container.x / (config.imgScale),
+          y: container.y / (config.imgScale)
         }
-        if (container.y >= 0) {
-          container.y = 0
-        }
+
+        oldX = e.stageX;
+        oldY = e.stageY;
       }
-
-      interVal = setTimeout(checkRound, 0);
-
-      container.x += e.stageX - oldX;
-      container.y += e.stageY - oldY;
-
-      config.center = {
-        x: container.x / (config.imgScale),
-        y: container.y / (config.imgScale)
-      }
-
-      oldX = e.stageX;
-      oldY = e.stageY;
     });
 
 
