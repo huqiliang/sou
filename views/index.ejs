@@ -7,6 +7,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="/javascripts/easeljs-0.8.2.min.js"></script>
+  <script src="/javascripts/alloy_finger.js"></script>
   <style>
     body {
       margin: 0;
@@ -44,13 +45,14 @@
     var interVal;
     var winWidth = window.innerWidth;
     var winHeight = window.innerHeight;
-
+    var box = document.querySelector("#canvas");
+    var image = new createjs.Bitmap("/images/chooseBg.jpg");
     var clickedContain = false;
     let saveScale;
     var config = {
-      imgScale: 1,
-      scalStep: 1.2,
-      minScale: 0.3,
+      imgScale: 0.3,
+      scalStep: 1.1,
+      minScale: 0.1,
       maxScale: 10,
       center: {
         x: 0,
@@ -144,53 +146,7 @@
       }, false);
       return obj;
     };
-    function getDistance(p1, p2) {
-      var x = p2.pageX - p1.pageX,
-        y = p2.pageY - p1.pageY;
-      return Math.sqrt((x * x) + (y * y));
-    };
-    function getAngle(p1, p2) {
-      var x = p1.pageX - p2.pageX,
-        y = p1.pageY - p2.pageY;
-      return Math.atan2(y, x) * 180 / Math.PI;
-    };
-    var box = document.querySelector("#canvas");
-    var context = box.getContext("2d");
-    var boxGesture = setGesture(box);  //得到一个对象
-    boxGesture.gesturestart = function () {  //双指开始
-      isTuremove = true;
-      //alert('test')
-    };
-    boxGesture.gesturemove = function (e) {  //双指移动
-      //alert(e.pageX)
-      e.preventDefault();
-      var zoom = event.scale;
-      var mousex = event.pageX - container.x
-      var mousey = event.pageY - container.y
-      let x, y;
-      if (zoom > 1) {
-        config.imgScale *= zoom;
-        x = container.x - mousex * (zoom - 1)
-        y = container.y - mousey * (zoom - 1)
-      } else {
-        config.imgScale *= zoom;
-        x = container.x + mousex * (1 - zoom)
-        y = container.y + mousey * (1 - zoom)
-      }
-      if (config.imgScale < config.maxScale && config.imgScale > config.minScale) {
-        container.setTransform(x, y, config.imgScale, config.imgScale);
-      }
 
-
-
-
-
-    };
-    boxGesture.gestureend = function () {  //双指结束
-      isTuremove = false
-      //box.innerHTML = "";
-      //box.style.cssText = "background-color:red";
-    }
     const drawRc = () => {
       config.areaOption.forEach((val, i) => {
         var cap = new createjs.Shape();
@@ -211,71 +167,108 @@
 
       stage.update();
     }
-    var image = new createjs.Bitmap("/images/chooseBg.jpg");
+
     container.on("mousedown", function (e) {
       clearInterval(interVal)
       isClick = true;
       oldX = e.stageX;
       oldY = e.stageY;
     });
-    container.on("pressmove", function (e) {
-      if (!isTuremove) {
-        isClick = false;
+    // container.on("pressmove", function (e) {
+    //   if (!isTuremove) {
+    //     isClick = false;
 
-        // function checkRound() {
-        //   if ((image.image.width * config.imgScale - winWidth) < Math.abs(container.x)) {
-        //     container.x = -(image.image.width * config.imgScale - winWidth)
-        //   }
-        //   if ((image.image.height * config.imgScale - winHeight) < Math.abs(container.y)) {
-        //     container.y = -(image.image.height * config.imgScale - winHeight)
-        //   }
+    //     function checkRound() {
+    //       if ((image.image.width * config.imgScale - winWidth) < Math.abs(container.x)) {
+    //         container.x = -(image.image.width * config.imgScale - winWidth)
+    //       }
+    //       if ((image.image.height * config.imgScale - winHeight) < Math.abs(container.y)) {
+    //         container.y = -(image.image.height * config.imgScale - winHeight)
+    //       }
 
-        //   if (container.x >= 0) {
-        //     container.x = 0
-        //   }
-        //   if (container.y >= 0) {
-        //     container.y = 0
-        //   }
-        // }
+    //       if (container.x >= 0) {
+    //         container.x = 0
+    //       }
+    //       if (container.y >= 0) {
+    //         container.y = 0
+    //       }
+    //     }
 
-        // interVal = setTimeout(checkRound, 0);
+    //     interVal = setTimeout(checkRound, 0);
 
-        container.x += e.stageX - oldX;
-        container.y += e.stageY - oldY;
+    //     container.x += e.stageX - oldX;
+    //     container.y += e.stageY - oldY;
+
+    //     config.center = {
+    //       x: container.x / (config.imgScale),
+    //       y: container.y / (config.imgScale)
+    //     }
+
+    //     oldX = e.stageX;
+    //     oldY = e.stageY;
+    //   }
+    // });
+
+    new AlloyFinger(box, {
+      pinch: function (event) {
+        if (!!interVal) {
+          clearInterval(interVal)
+
+        }
+        isTuremove = false
+        // e.preventDefault();
+        var zoom = event.zoom;
+        //alert(zoom)
+        var mousex = event.pageX - container.x
+        var mousey = event.pageY - container.y
+        let x, y;
+        if (zoom > 1) {
+          config.imgScale *= zoom;
+          x = container.x - mousex * (zoom - 1)
+          y = container.y - mousey * (zoom - 1)
+        } else {
+          config.imgScale *= zoom;
+          x = container.x + mousex * (1 - zoom)
+          y = container.y + mousey * (1 - zoom)
+        }
+        if (config.imgScale < config.maxScale && config.imgScale > config.minScale) {
+          container.setTransform(x, y, config.imgScale, config.imgScale);
+        }
+
+      },
+      pressMove: function (e) {
+        function checkRound() {
+          if ((image.image.width * config.imgScale - winWidth) < Math.abs(container.x)) {
+            container.x = -(image.image.width * config.imgScale - winWidth)
+          }
+          if ((image.image.height * config.imgScale - winHeight) < Math.abs(container.y)) {
+            container.y = -(image.image.height * config.imgScale - winHeight)
+          }
+
+          if (container.x >= 0) {
+            container.x = 0
+          }
+          if (container.y >= 0) {
+            container.y = 0
+          }
+        }
+
+        interVal = setTimeout(checkRound, 0);
+
+        container.x = container.x + e.deltaX;
+        container.y = container.y + e.deltaY;
 
         config.center = {
           x: container.x / (config.imgScale),
           y: container.y / (config.imgScale)
         }
 
-        oldX = e.stageX;
-        oldY = e.stageY;
+        oldX = container.x;
+        oldY = container.x;
       }
-    });
+      //},
+    })
 
-    var originx = 0;
-    var originy = 0;
-    var zoomIntensity = 0.2
-    box.onmousewheel = function (e) {
-      var wheel = event.wheelDelta / 120;
-      var zoom = Math.exp(wheel * zoomIntensity);
-
-      var mousex = event.clientX - container.x
-      var mousey = event.clientY - container.y
-      let x, y;
-      if (zoom > 1) {
-        config.imgScale *= 2;
-        x = container.x - mousex
-        y = container.y - mousey
-      } else {
-        config.imgScale /= 2;
-        x = container.x + mousex / 2
-        y = container.y + mousey / 2
-      }
-
-      container.setTransform(x, y, config.imgScale, config.imgScale);
-
-    };
     container.addChild(image);
 
     bigBtn.addEventListener('click', () => {
