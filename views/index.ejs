@@ -50,8 +50,8 @@
     var config = {
       imgScale: 1,
       scalStep: 1.1,
-      minScale: 0.3,
-      maxScale: 10,
+      minScale: 0.1,
+      maxScale: 5,
       center: {
         x: 0,
         y: 0
@@ -166,70 +166,60 @@
       stage.update();
     }
 
-    let oldZoom = false;
+    let oldZoom = false; var mousex, mousey;
+    let initScale = 1;
+    function checkRound(image, config, winWidth, winHeight, container) {
+      if ((image.image.width * config.imgScale - winWidth) < Math.abs(container.x)) {
+        container.x = -(image.image.width * config.imgScale - winWidth)
+      }
+      if ((image.image.height * config.imgScale - winHeight) < Math.abs(container.y)) {
+        container.y = -(image.image.height * config.imgScale - winHeight)
+      }
+
+      if (container.x >= 0) {
+        container.x = 0
+      }
+      if (container.y >= 0) {
+        container.y = 0
+      }
+    }
+
+
+    var zoom = 1
     new AlloyFinger(box, {
       multipointStart: function (event) {
         //reset origin x and y
-        // var centerX = (event.touches[0].pageX + event.touches[1].pageX) / 2;
-        // var centerY = (event.touches[0].pageY + event.touches[1].pageY) / 2;
-        // alert(centerX)
-        // var offX = centerX - img_centerX;
-        // var offY = centerY - img_centerY;
-        // var preOriginX = self.img.originX
-        // var preOriginY = self.img.originY
-        // self.img.originX = offX / self.img.scaleX;
-        // self.img.originY = offY / self.img.scaleY;
-        // //reset translateX and translateY
-        // self.img.translateX += offX - preOriginX * self.img.scaleX;
-        // self.img.translateY += offY - preOriginY * self.img.scaleX;
-        // self.initScale = self.img.scaleX;
+        mousex = (event.touches[0].pageX + event.touches[1].pageX) / 2 - container.x;
+        mousey = (event.touches[0].pageY + event.touches[1].pageY) / 2 - container.y;
+        initScale = container.scaleX;
+
+      },
+      multipointEnd: function (params) {
+        clearTimeout(interVal)
       },
       pinch: function (event) {
-        console.log("Ggg");
-
-        if (!!interVal) {
-          clearInterval(interVal)
-        }
+        interVal = setTimeout(checkRound(image, config, winWidth, winHeight, container), 0);
         if (!oldZoom) {
           oldZoom = config.imgScale
         }
-        var zoom = event.zoom;
-
-        var mousex = event.touches[0].pageX - container.x
-        var mousey = event.touches[0].pageY - container.y
-
+        zoom = event.zoom * initScale
         let x, y;
-        if (zoom > 1) {
-          container.x = container.x - mousex * (zoom - oldZoom)
-          container.y = container.y - mousey * (zoom - oldZoom)
-        } else {
-          container.x = container.x + mousex * (oldZoom - zoom)
-          container.y = container.y + mousey * (oldZoom - zoom)
+        //if (zoom * container.scaleX < config.maxScale && zoom * container.scaleX > config.minScale) {
+        if (event.zoom > 1) {
+          container.x -= mousex * (zoom - oldZoom)
+          container.y -= mousey * (zoom - oldZoom)
+        } else if (event.zoom < 1) {
+          container.x += mousex * (oldZoom - zoom)
+          container.y += mousey * (oldZoom - zoom)
         }
-        if (zoom < config.maxScale && zoom > config.minScale) {
-          container.setTransform(container.x, container.y, zoom, zoom);
-        }
+
+        container.setTransform(container.x, container.y, zoom, zoom);
         config.imgScale = oldZoom = zoom
+        //}
+
       },
       pressMove: function (e) {
-        function checkRound() {
-          if ((image.image.width * config.imgScale - winWidth) < Math.abs(container.x)) {
-            container.x = -(image.image.width * config.imgScale - winWidth)
-          }
-          if ((image.image.height * config.imgScale - winHeight) < Math.abs(container.y)) {
-            container.y = -(image.image.height * config.imgScale - winHeight)
-          }
-
-          if (container.x >= 0) {
-            container.x = 0
-          }
-          if (container.y >= 0) {
-            container.y = 0
-          }
-        }
-
-        interVal = setTimeout(checkRound, 0);
-
+        interVal = setTimeout(checkRound(image, config, winWidth, winHeight, container), 0);
         container.x += e.deltaX;
         container.y += e.deltaY;
 
