@@ -185,6 +185,8 @@
         // self.initScale = self.img.scaleX;
       },
       pinch: function (event) {
+        console.log("Ggg");
+
         if (!!interVal) {
           clearInterval(interVal)
         }
@@ -192,6 +194,7 @@
           oldZoom = config.imgScale
         }
         var zoom = event.zoom;
+
         var mousex = event.pageX - container.x
         var mousey = event.pageY - container.y
 
