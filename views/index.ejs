@@ -195,8 +195,8 @@
         }
         var zoom = event.zoom;
 
-        var mousex = event.pageX - container.x
-        var mousey = event.pageY - container.y
+        var mousex = event.touches[0].pageX - container.x
+        var mousey = event.touches[0].pageY - container.y
 
         let x, y;
         if (zoom > 1) {
