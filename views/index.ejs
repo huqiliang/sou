@@ -37,24 +37,19 @@
 </body>
 <script>
   (function () {
-    var isClick = true;
-    var first = true;
-    var temp;
     var interVal;
     var winWidth = window.innerWidth;
     var winHeight = window.innerHeight;
     var box = document.querySelector("#canvas");
     var image = new createjs.Bitmap("/images/chooseBg.jpg");
-    var clickedContain = false;
-    let saveScale;
     var config = {
       imgScale: 1,
       scalStep: 1.1,
-      minScale: 0.1,
-      maxScale: 5,
+      minScale: 0.2,
+      maxScale: 10,
       center: {
-        x: 0,
-        y: 0
+        x: -winWidth / 2,
+        y: -winHeight / 2
       },
       areaOption: [
         {
@@ -114,37 +109,6 @@
 
 
     }
-    function setGesture(el) {
-      var obj = {}; //定义一个对象
-      var istouch = false;
-      var start = [];
-      el.addEventListener("touchstart", function (e) {
-        if (e.touches.length >= 2) {  //判断是否有两个点在屏幕上
-          istouch = true;
-          start = e.touches;  //得到第一组两个点
-          obj.gesturestart && obj.gesturestart.call(el); //执行gesturestart方法
-        };
-      }, false);
-      document.addEventListener("touchmove", function (e) {
-        e.preventDefault();
-        if (e.touches.length >= 2 && istouch) {
-          var now = e.touches;  //得到第二组两个点
-          var scale = getDistance(now[0], now[1]) / getDistance(start[0], start[1]); //得到缩放比例，getDistance是勾股定理的一个方法
-          var rotation = getAngle(now[0], now[1]) - getAngle(start[0], start[1]);  //得到旋转角度，getAngle是得到夹角的一个方法
-          e.scale = scale.toFixed(2);
-          e.rotation = rotation.toFixed(2);
-          obj.gesturemove && obj.gesturemove.call(el, e);  //执行gesturemove方法
-        };
-      }, false);
-      document.addEventListener("touchend", function (e) {
-        if (istouch) {
-          istouch = false;
-          obj.gestureend && obj.gestureend.call(el);  //执行gestureend方法
-        };
-      }, false);
-      return obj;
-    };
-
     const drawRc = () => {
       config.areaOption.forEach((val, i) => {
         var cap = new createjs.Shape();
@@ -156,9 +120,8 @@
         cap.graphics.lineTo(...val.startPoint);
         cap.graphics.endFill();
         cap.on('click', function (e) {
-          if (isClick) {
-            val.fn(e)
-          }
+
+          val.fn(e)
         });
         container.addChild(cap);
       })
@@ -185,91 +148,70 @@
     }
 
 
-    var zoom = 1
+    var oldX, oldY;
     new AlloyFinger(box, {
       multipointStart: function (event) {
         //reset origin x and y
-        mousex = (event.touches[0].pageX + event.touches[1].pageX) / 2 - container.x;
-        mousey = (event.touches[0].pageY + event.touches[1].pageY) / 2 - container.y;
+        mousex = (event.touches[0].pageX + event.touches[1].pageX) / 2 - container.x / container.scaleX;
+        mousey = (event.touches[0].pageY + event.touches[1].pageY) / 2 - container.y / container.scaleX;
         initScale = container.scaleX;
-
-      },
-      multipointEnd: function (params) {
         clearTimeout(interVal)
       },
-      pinch: function (event) {
+      multipointEnd: function (params) {
         interVal = setTimeout(checkRound(image, config, winWidth, winHeight, container), 0);
+      },
+      pinch: function (event) {
+        console.log("dd");
         if (!oldZoom) {
           oldZoom = config.imgScale
         }
-        zoom = event.zoom * initScale
-        let x, y;
-        //if (zoom * container.scaleX < config.maxScale && zoom * container.scaleX > config.minScale) {
-        if (event.zoom > 1) {
+        var zoom = event.zoom * initScale
+        if (zoom * container.scaleX < config.maxScale && zoom * container.scaleX > config.minScale) {
           container.x -= mousex * (zoom - oldZoom)
           container.y -= mousey * (zoom - oldZoom)
-        } else if (event.zoom < 1) {
-          container.x += mousex * (oldZoom - zoom)
-          container.y += mousey * (oldZoom - zoom)
+          container.setTransform(container.x, container.y, zoom, zoom);
+          config.imgScale = oldZoom = zoom
+          interVal = setTimeout(checkRound(image, config, winWidth, winHeight, container), 0);
         }
-
-        container.setTransform(container.x, container.y, zoom, zoom);
-        config.imgScale = oldZoom = zoom
-        //}
-
       },
       pressMove: function (e) {
-        interVal = setTimeout(checkRound(image, config, winWidth, winHeight, container), 0);
         container.x += e.deltaX;
         container.y += e.deltaY;
 
         config.center = {
-          x: container.x / (config.imgScale),
-          y: container.y / (config.imgScale)
+          x: (container.x - winWidth / 2) / config.imgScale,
+          y: (container.y - winHeight / 2) / config.imgScale
         }
-
+        interVal = setTimeout(checkRound(image, config, winWidth, winHeight, container), 0);
       }
       //},
     })
 
     container.addChild(image);
+    function transFromPoint(center, off, config) {
+      let a = center * config.imgScale + off / 2
+      return a
+    }
+    function containerScale() {
+      container.setTransform(transFromPoint(config.center.x, winWidth, config), transFromPoint(config.center.y, winHeight, config), config.imgScale, config.imgScale)
+      interVal = setTimeout(checkRound(image, config, winWidth, winHeight, container), 0);
+    }
 
-    bigBtn.addEventListener('click', () => {
-
+    bigBtn.addEventListener('click', (e) => {
+      e.preventDefault()
       if (config.imgScale < config.maxScale) {
         config.imgScale = config.imgScale * config.scalStep;
-        function transFromPoint(x, w, scale) {
-          let a = x + (x - w / 2) * (scale - 1)
-          //  alert(a)
-          if (a > 0) {
-            a = 0
-          }
-          return a
-        }
-        let x = transFromPoint(config.center.x, winWidth, config.imgScale);
+        containerScale()
 
-        let y = transFromPoint(config.center.y, winHeight, config.imgScale);
 
-        container.setTransform(x, y, config.imgScale, config.imgScale, 0, 0, 0)
       } else {
         alert('不能再放大了')
       }
     })
     smallBtn.addEventListener('click', () => {
       if (config.imgScale > config.minScale) {
-        //saveScale = config.imgScale;
-        first = false
         config.imgScale = config.imgScale / config.scalStep;
-        function transFromPoint(x, w, scale) {
-          let a = x - (x - w / 2) * (1 - scale)
-          if (a > 0) {
-            a = 0
-          }
-          return a
-        }
-        let x = transFromPoint(config.center.x, winWidth, config.imgScale)
-        let y = transFromPoint(config.center.y, winHeight, config.imgScale)
-        container.setTransform(x, y, config.imgScale, config.imgScale, 0, 0, 0)
+        containerScale()
       } else {
         alert('不能再缩小了')
       }
