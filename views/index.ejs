@@ -112,20 +112,26 @@
     const drawRc = () => {
       config.areaOption.forEach((val, i) => {
         var cap = new createjs.Shape();
-        cap.graphics.beginFill("red");
+        cap.graphics.beginFill("rgba(149, 122, 89, 0.1)");
         cap.graphics.moveTo(...val.startPoint);
         val.polygon.forEach(item => {
           cap.graphics.lineTo(...item);
         })
         cap.graphics.lineTo(...val.startPoint);
         cap.graphics.endFill();
+        cap.name = `cap${i}`
         cap.on('click', function (e) {
 
           val.fn(e)
         });
         container.addChild(cap);
       })
+      // container.addEventListener("click", function (evt) {
+      //   // do stuff...
+      //   console.log(evt.target.name);
 
+      //   //evt.remove(); // removes this listener.
+      // });
       stage.update();
     }
 
